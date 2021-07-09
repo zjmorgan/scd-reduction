@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/repos/ISAW/!svn/ver/21574/trunk/PythonPrograms/PythonLibrary
+END
+read_detcal2.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/repos/ISAW/!svn/ver/21456/trunk/PythonPrograms/PythonLibrary/read_detcal2.py
+END
+SCDTools.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/repos/ISAW/!svn/ver/21574/trunk/PythonPrograms/PythonLibrary/SCDTools.py
+END
+ReduceDictionary.py
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/repos/ISAW/!svn/ver/21559/trunk/PythonPrograms/PythonLibrary/ReduceDictionary.py
+END
+center.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/repos/ISAW/!svn/ver/21545/trunk/PythonPrograms/PythonLibrary/center.py
+END
+crystal.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/repos/ISAW/!svn/ver/21563/trunk/PythonPrograms/PythonLibrary/crystal.py
+END
+read_write_refl_header.py
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/repos/ISAW/!svn/ver/21496/trunk/PythonPrograms/PythonLibrary/read_write_refl_header.py
+END
+integrate_1d_peak.py
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/repos/ISAW/!svn/ver/21573/trunk/PythonPrograms/PythonLibrary/integrate_1d_peak.py
+END
+read_detcal.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/repos/ISAW/!svn/ver/21409/trunk/PythonPrograms/PythonLibrary/read_detcal.py
+END

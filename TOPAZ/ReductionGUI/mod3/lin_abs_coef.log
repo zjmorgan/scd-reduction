@@ -1,0 +1,23 @@
+Output from lin_abs_coef.py script:
+
+Chemical formula: Nb1 Ir1 Te4
+Number of formula units in the unit cell (Z):  4.000
+Unit cell volume (A^3):   615.24
+
+Cross sections in units of barns ( 1 barn = 1E-24 cm^2)
+Absorption cross section for 2200 m/s neutrons (wavelength = 1.8 A)
+For further information and references, see .../SNS/TOPAZ/IPTS-9918/shared/2016A/reduction/
+
+Atom      ScatXs      AbsXs
+----      ------      -----
+Nb       6.25500    1.15000
+Ir      14.00000  425.00000
+Te       4.32000    4.70000
+
+The linear absorption coefficent for total scattering is  0.244 cm^-1
+The linear absorption coefficent for true absorption at 1.8 A is  2.893 cm^-1
+
+The calculated density is  8.589 grams/cm^3
+
+For a weight of  8.600 mg, the crystal volume is  1.001 mm^3
+The crystal radius is  0.621 mm, or 0.0621 cm
