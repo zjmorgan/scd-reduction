@@ -823,67 +823,72 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
         os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
         
     def accept(self):
-        #Generate config file 
-        baseDir = os.getcwd()
-        outDir = baseDir[:baseDir.find("shared")]+"shared/"+self.expName
-        print ("Working directory: ",outDir)
-        pg = self.pointGroup
-        print ("Point group: ",pg)
-        kw = {
-            "molecularFormula": self.molecularFormula,
-            "Z": self.Z,
-            "unitCellVolume": self.unitCellVolume,
-            "sampleRadius": self.sampleRadius,
-            "instrument": self.instrument,
-            "calFileName": self.calFileName,
-            "maxQ": self.maxQ,
-            "split_threshold": self.splitThreshold,
-            "backgroundFileName": self.backgroundFileName,
-            "subtract_bkg": self.subtract_bkg,
-            "outputDirectory": outDir,
-            "data_directory": self.dataDirectory,
-            "UB_filename": self.UBFileName,
-            "read_UB": self.read_UB,
-            "centering": self.centering,
-            "cell_type": self.laueGroup,
-            "numPeaksToFind": self.numPeaksToFind,
-            "abcMin": self.abcMin,
-            "abcMax": self.abcMax,
-            "tolerance": self.tolerance,
-            "predictPeaks": self.predictPeaks,
-            "min_pred_dspacing": self.pred_minDSpacing,
-            "max_pred_dspacing": self.pred_maxDSpacing,
-            "min_pred_wl": self.pred_minWavelength,
-            "max_pred_wl": self.pred_maxWavelength,
-            "peak_radius": self.peakRadius,
-            "bkg_inner_radius": self.bkg_inner_radius,
-            "bkg_outer_radius": self.bkg_outer_radius,
-            "ellipse_size_specified": self.ellipse_size_specified,
-            "n_bad_edge_pixels": self.edgePixels,
-            "exp_name": self.expName,
-            "run_nums": self.runNums,
-            "spectraFileName": self.spectraFileName,
-            "normToWavelength": self.normToWavelength,
-            "minIsigI": self.minIsigI,
-            "numBorderCh": self.borderPixels,
-            "minIntensity": self.minIntensity,
-            "min_dspacing": self.minDSpacing,
-            "scaleFactor": self.scaleFactor,
-            "min_wl": self.minWavelength,
-            "max_wl": self.maxWavelength,
-            "pg_symbol": pg,
-            "z_score": self.z_score,
-            "starting_batch_number": self.starting_batch_number
-        }
-        # if value in dictionary is missing, set to None
-        for key in list(kw.keys()):
-            if not kw[key]:
-                kw[key] = "None"
+        #Generate config file
+        if (self.expName == ''):
+            print ("Enter an experiment name")
+        elif (self.molecularFormula == ''): 
+            print ("Enter a valid molecular formula")
+        else:
+            baseDir = os.getcwd()
+            outDir = baseDir[:baseDir.find("shared")]+"shared/"+self.expName
+            print ("Working directory: ",outDir)
+            pg = self.pointGroup
+            print ("Point group: ",pg)
+            kw = {
+                "molecularFormula": self.molecularFormula,
+                "Z": self.Z,
+                "unitCellVolume": self.unitCellVolume,
+                "sampleRadius": self.sampleRadius,
+                "instrument": self.instrument,
+                "calFileName": self.calFileName,
+                "maxQ": self.maxQ,
+                "split_threshold": self.splitThreshold,
+                "backgroundFileName": self.backgroundFileName,
+                "subtract_bkg": self.subtract_bkg,
+                "outputDirectory": outDir,
+                "data_directory": self.dataDirectory,
+                "UB_filename": self.UBFileName,
+                "read_UB": self.read_UB,
+                "centering": self.centering,
+                "cell_type": self.laueGroup,
+                "numPeaksToFind": self.numPeaksToFind,
+                "abcMin": self.abcMin,
+                "abcMax": self.abcMax,
+                "tolerance": self.tolerance,
+                "predictPeaks": self.predictPeaks,
+                "min_pred_dspacing": self.pred_minDSpacing,
+                "max_pred_dspacing": self.pred_maxDSpacing,
+                "min_pred_wl": self.pred_minWavelength,
+                "max_pred_wl": self.pred_maxWavelength,
+                "peak_radius": self.peakRadius,
+                "bkg_inner_radius": self.bkg_inner_radius,
+                "bkg_outer_radius": self.bkg_outer_radius,
+                "ellipse_size_specified": self.ellipse_size_specified,
+                "n_bad_edge_pixels": self.edgePixels,
+                "exp_name": self.expName,
+                "run_nums": self.runNums,
+                "spectraFileName": self.spectraFileName,
+                "normToWavelength": self.normToWavelength,
+                "minIsigI": self.minIsigI,
+                "numBorderCh": self.borderPixels,
+                "minIntensity": self.minIntensity,
+                "min_dspacing": self.minDSpacing,
+                "scaleFactor": self.scaleFactor,
+                "min_wl": self.minWavelength,
+                "max_wl": self.maxWavelength,
+                "pg_symbol": pg,
+                "z_score": self.z_score,
+                "starting_batch_number": self.starting_batch_number
+            }
+            # if value in dictionary is missing, set to None
+            for key in list(kw.keys()):
+                if not kw[key]:
+                    kw[key] = "None"
 
-        templatePath = "./template.config"
-        self.path = self.expName+".config"
-        self.format_template(templatePath, self.path, **kw)
-        self.plotConfig()
+            templatePath = "./template.config"
+            self.path = self.expName+".config"
+            self.format_template(templatePath, self.path, **kw)
+            self.plotConfig()
 
     def plotConfig(self):
         import configparser
