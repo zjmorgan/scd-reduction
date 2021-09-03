@@ -4,7 +4,7 @@
 # Modified and combined python scripts from 
 # lin_avs_coef2.py, ReduceSCD_Parallel.py and anvred3_topi.py
 # 
-# X. P. Wang, May 2018f
+# X. P. Wang, May 2018
 #
 # =========================================================================================
 # Part One 
@@ -36,11 +36,11 @@ from mantid.kernel import *
 from mantid.geometry import PointGroupFactory, SpaceGroupFactory, UnitCell
 #print '\n'.join(sys.path)
 
-import ReduceDictionary
-
 if os.path.exists('/SNS/TOPAZ/shared/PythonPrograms/Python3Library'):
     sys.path.append('/SNS/TOPAZ/shared/PythonPrograms/Python3Library')
     sys.path.append('/SNS/TOPAZ/shared/PythonPrograms/ISAW_PythonSources/Lib')
+#else:
+#    sys.path.append('/SNS/TOPAZ/IPTS-25887/shared/ReductionGUI3/ISAW_PythonSources/Lib')
 from readrefl_header import *
 from readrefl_SNS import *
 from readSpecCoef import *
@@ -119,7 +119,7 @@ if not os.path.exists(output_directory):
 print(("\nWorking dir : %s" % os.getcwd()))
 os.chdir(output_directory)
 print(("\nOutput  dir : %s" % output_directory))
-print(("Starting_batch_number %d"%(starting_batch_number)))
+
 #*****************Part One *************************************************
 #
 #           lin_abs_coef v3.
@@ -253,17 +253,94 @@ else:
 logFile.close()
 print('\nCompleted calculation of linear absorption coefficients\n')
 
+#********************** Part Two **********************************************************
+# Modified ReduceSCD_Parallel.py
+#
+#
+# Version 2.0, modified to work with Mantid's new python interface.
+#
+# This script will run multiple instances of the script ReduceOneSCD_Run.py
+# in parallel, using either local processes or a slurm partition.  After
+# using the ReduceOneSCD_Run script to find, index and integrate peaks from
+# multiple runs, this script merges the integrated peaks files and re-indexes
+# them in a consistent way.  If desired, the indexing can also be changed to a
+# specified conventional cell.
+# Many intermediate files are generated and saved, so all output is written 
+# to a specified output_directory.  This output directory must be created
+# before running this script, and must be specified in the configuration file.
+# The user should first make sure that all parameters are set properly in
+# the configuration file for the ReduceOneSCD_Run.py script, and that that 
+# script will properly reduce one scd run.  Once a single run can be properly
+# reduced, set the additional parameters in the configuration file that specify 
+# how the the list of runs will be processed in parallel. 
+print("\n*********************************************************************************")
+
+# Modified Version 2.0 ReduceSCD_CombineFiles.py
+#
+# First combine all of the integrated files, by reading the separate files and
+# appending them to a combined output file.
 #
 # X. P. Wang May 2018
 #
 
 print("\n**************************************************************************************")
-print("************** Loading Peaks *******************************************")
+print("************** Starting to Combine Results *******************************************")
 print("**************************************************************************************\n")
 
 niggli_name = output_directory + "/" + exp_name + "_Niggli"
 niggli_integrate_file = niggli_name + ".integrate"
 niggli_matrix_file = niggli_name + ".mat"
+
+if not use_cylindrical_integration:
+  first_time = True
+  seqNum = 0
+  fout = open(niggli_integrate_file,"w")
+  for r_num in run_nums:
+    one_run_file = output_directory + '/' + str(r_num) + '_Niggli.integrate'
+    f = open(one_run_file,"r")
+    lines = f.readlines()
+    f.close()
+    for line in lines:
+      if line[0] =="0" or line[0] == "1" or line[0] == "2":
+        fout.write(line)
+      elif line[0] !="4" and line[0] != "5" and line[0] != "6" and line[0] != "7" and line[0] != "V":
+        strCount = "%6d"%seqNum
+        line = line[:2] + strCount + line[8:]
+        fout.write(line)
+        seqNum = seqNum + 1
+      elif first_time:
+        fout.write(line)
+    first_time = False
+  fout.close()
+
+#
+# Load the combined file and re-index all of the peaks together. 
+# Save them back to the combined Niggli file (Or selcted UB file if in use...)
+#
+  peaks_ws = LoadIsawPeaks( Filename=niggli_integrate_file )
+
+#
+# Find a Niggli UB matrix that indexes the peaks in this run
+# Load UB instead of Using FFT
+#Index peaks using UB from UB of initial orientation run/or combined runs from first iteration of crystal orientation refinement
+  if read_UB:
+    LoadIsawUB(InputWorkspace=peaks_ws, Filename=UB_filename)
+    #Refine UB and reindex peaks
+    IndexPeaks(PeaksWorkspace=peaks_ws, Tolerance=tolerance, RoundHKLs=False)
+    FindUBUsingIndexedPeaks(PeaksWorkspace=peaks_ws, Tolerance=tolerance)
+    #OptimizeCrystalPlacement(PeaksWorkspace=peaks_ws,ModifiedPeaksWorkspace=peaks_ws,
+    #  FitInfoTable='CrystalPlacement_info',MaxIndexingError=tolerance)
+  else:
+    FindUBUsingFFT( PeaksWorkspace=peaks_ws, MinD=min_d, MaxD=max_d, Tolerance=0.2, Iterations=30)
+
+  IndexPeaks( PeaksWorkspace=peaks_ws, CommonUBForAll=True, Tolerance=tolerance )
+  FindUBUsingIndexedPeaks(PeaksWorkspace=peaks_ws, Tolerance=tolerance)
+  SaveIsawPeaks( InputWorkspace=peaks_ws, AppendFile=False, Filename=niggli_integrate_file )
+  FilterPeaks(InputWorkspace=peaks_ws, OutputWorkspace='strong_peaks', FilterVariable='Signal/Noise', FilterValue=5, Operator='>=')
+  FindUBUsingIndexedPeaks(PeaksWorkspace='strong_peaks', Tolerance=tolerance)
+  SaveIsawUB( InputWorkspace='strong_peaks', Filename=niggli_matrix_file )
+  anvred_integrate_fname = niggli_integrate_file
+  ub_matrix_file = niggli_matrix_file
 
 #
 # If requested, also switch to the specified conventional cell and save the
@@ -274,16 +351,72 @@ if not use_cylindrical_integration:
     conv_name = output_directory + "/" + exp_name + "_" + cell_type + "_" + centering
     conventional_integrate_file = conv_name + ".integrate"
     conventional_matrix_file = conv_name + ".mat"
+    SelectCellOfType( PeaksWorkspace=peaks_ws, CellType=cell_type, Centering=centering,
+                      Apply=True, Tolerance=tolerance )
+    # Least squares refinement of conventional cell after transfromation
+    if (cell_type=='Rhombohedral' and centering=='R'):
+      cell_type = 'Hexagonal'  # The R lattice is hexagonal after unit cell transformation
+    #elif (cell_type=='Monoclinic'):
+    #  cell_type = 'Monoclinic ( b unique )'
+    OptimizeLatticeForCellType(PeaksWorkspace=peaks_ws, CellType=cell_type,Apply='1', Tolerance=tolerance)
+    #OptimizeCrystalPlacement(PeaksWorkspace=peaks_ws,ModifiedPeaksWorkspace=peaks_ws,
+    #  FitInfoTable='CrystalPlacement_info',MaxIndexingError=tolerance)
+    #IndexPeaks( PeaksWorkspace=peaks_ws, CommonUBForAll=True, Tolerance=tolerance )
+    SaveIsawPeaks( InputWorkspace=peaks_ws, AppendFile=False, Filename=conventional_integrate_file )
+    FilterPeaks(InputWorkspace=peaks_ws, OutputWorkspace='strong_peaks', FilterVariable='Signal/Noise', FilterValue=5, Operator='>=')
+    OptimizeLatticeForCellType(PeaksWorkspace='strong_peaks', CellType=cell_type,Apply='1', Tolerance=tolerance)
+    SaveIsawUB( InputWorkspace='strong_peaks', Filename=conventional_matrix_file )
     #ANVRED
     anvred_integrate_fname = conventional_integrate_file
     ub_matrix_file = conventional_matrix_file
-  else:
-    anvred_integrate_fname = niggli_integrate_file
-    ub_matrix_file = niggli_matrix_file
+
+if use_cylindrical_integration: 
+  if (not cell_type is None) or (not centering is None):
+    print("WARNING: Cylindrical profiles are NOT transformed!!!")
+  # Combine *.profiles files
+  filename = output_directory + '/' + exp_name + '.profiles'
+  output = open( filename, 'w' )
+
+  # Read and write the first run profile file with header.
+  r_num = run_nums[0]
+  filename = output_directory + '/' + instrument_name + '_' + r_num + '.profiles'
+  input = open( filename, 'r' )
+  file_all_lines = input.read()
+  output.write(file_all_lines)
+  input.close()
+  os.remove(filename)
+
+  # Read and write the rest of the runs without the header.
+  for r_num in run_nums[1:]:
+      filename = output_directory + '/' + instrument_name + '_' + r_num + '.profiles'
+      input = open(filename, 'r')
+      for line in input:
+          if line[0] == '0': break
+      output.write(line)
+      for line in input:
+          output.write(line)
+      input.close()
+      os.remove(filename)
+
+  # Remove *.integrate file(s) ONLY USED FOR CYLINDRICAL INTEGRATION!
+  for file in os.listdir(output_directory):
+    if file.endswith('.integrate'):
+      os.remove(file)
+
+end_time = time.time()
+
+print("\n**************************************************************************************")
+print("****************************** DONE PROCESSING ALL RUNS ******************************")
+print("**************************************************************************************\n")
 
 
-peaks_ws=LoadIsawPeaks(Filename =anvred_integrate_fname)
-LoadIsawUB(InputWorkspace=peaks_ws,Filename =ub_matrix_file)
+
+
+print(('Total time:   ' + str(end_time - start_time) + ' sec'))
+print(('Connfig file: ' + config_file_name)) 
+print(('Script file:  ' + reduce_one_run_script + '\n'))
+
+
 
 print("\n**************************************************************************************")
 print("****************************** ANVRED Reduction **************************************")
@@ -520,6 +653,42 @@ if True:
 #  33:1.0,34:1.0,36:1.0,37:1.0,38:1.0,39:1.0,\
 #  46:1.0,47:1.0,48:1.0,49:1.0,
 #  56:1,57:1,58:1,59:1}
+#
+
+#May 8, 2013
+#detScale = {17:1.092114823,18:0.869105443, \
+#     22:1.081377685,26:1.055199489,27:1.070308725,28:0.886157884, \
+#     36:1.112773972,37:1.012894506,38:1.049384146,39:0.890313805, \
+#     47:1.068553893,48:0.900566426, \
+#     58:0.911249203}
+
+#May 8, 2013
+#detScale = {17:1.092114823,18:0.869105443, \
+#     22:1.081377685,26:1.055199489,27:1.070308725,28:0.886157884, \
+#     36:1.112773972,37:1.012894506,38:1.049384146,39:0.890313805, \
+#     47:1.068553893,48:0.900566426, \
+#     58:0.911249203}
+
+#Scolecite May  2013 new scale from Jana June 22, 2021
+#detScale={ 13:1.00236,14:1.002356,16:1.002356,17:1.08314,18:0.88048,19:1.00236,\
+#           20:1.002356,22:1.069259,26:1.02063,27:1.07548,28:0.93082,29:1.00236,\
+#           33:1.002356,36:1.06732,37:0.97944,38:1.07740,39:0.88358,\
+#           46:1.002356,47:1.06048,48:0.92961,49:1.00236,\
+#           56:1.00236,57:1.00236,58:0.91408,59:1.00236}
+
+#scolecite 09/23/2013 Spectrum_7892_7827.dat Jana2020
+#detScale={ 13:1, 14:1,16:1,17:1.08177,18:0.91697,19:1,\
+#           20:1,22:1.075802,26:1.00577,27:1.06215,28:0.95482,29:1,\
+#           33:1,36:0.99789, 37:0.98295,38:1.09930,39:0.94828,\
+#           46:1,47:1.07601, 48:0.95802,49:1,\
+#           56:1, 57:1, 58:0.95298,59:1}
+
+#scolecite	11/23/2014	Use new V(Nb) spectrum
+#detScale={13:1.045376639,14:1.049323439,16:0.96320942,17:1.083694892,18:0.841218527,19:0.968667508,\
+#22:1.019967316,23:1.058377391,26:1.063270351,27:1.043714078,28:0.835908577,29:1.041756057,\
+#33:1.098880837,34:0.995098568,36:1.154014423,37:0.998311123,38:1.011176494,39:0.823424691,\
+#46:1.016793518,47:1.063452809,48:0.858501134,49:1.057252466,\
+#58:0.908609739}
 
 #Scolecite 2015/08/31
 #detScale={13:1.044824,14:1.06399,16:0.95552,17:1.09583,18:0.84606,19:1.00154,\
@@ -527,7 +696,6 @@ if True:
 #  33:1.101041,34:0.98625,36:1.02813,37:1.10629,38:0.87417,39:0.86848,\
 # 46:0.897062,47:1.23349,48:0.82479,49:1.02740,\
 #  58:0.921672}
-
 ## Scolecite 09/02/2015 Use New V/Nb spectrum TOPAZ_12387_12389
 #detScale={13:1.029577,14:1.03623,16:0.93879,17:1.07941,18:0.83849,19:1.02553,\
 #  22:1.000527,23:1.03267,26:1.03788,27:1.02859,28:0.85372,29:1.10750,\
@@ -563,13 +731,7 @@ if True:
 #      33:1.0,34:1.0,36:1.0,37:1.0,38:1.0,39:1.0,\
 #      46:1.0,47:1.0,48:1.0,49:1.0}
 
-#Scolecite 05/09/2016
-#detScale={13:1.089863,14:1.265444,16:1.00188,17:1.14155,18:0.83793,19:0.92816,\
-#    20:0.716619,22:1.053086,23:1.11135,26:1.12459,27:1.10414,28:0.79681,29:0.86325,\
-#    33:1.151482,34:1.04124, 36:1.22702,37:1.04875,38:1.01004,39:0.73745,\
-#    46:1.072362,47:1.08188, 48:0.80639,49:0.78871}
-
-#DetScale Scolecite 08-13-16
+#DetScale Scolecite	08-13-16															
 #detScale={
 #        13:1.090472,14:1.27426,16:1.00603,17:1.15163,18:0.84610,19:0.93433,\
 #        20:0.705760,21:0.81827,22:1.05983,23:1.11589,26:1.12619,27:1.11085,28:0.80871,29:0.88591,\
@@ -661,7 +823,7 @@ detScale={13:1.05321,14:1.066755,16:0.973064,17:0.92406,18:0.93731,19:0.90281,\
           33:1.145274,36:1.07773,37:1.01502,38:0.97703,39:0.88045,\
           46:1.150778,47:0.94977,48:1.00642,49:0.84127,\
           56:1.18183,57:0.95950,58:1.04685,59:1.01310}
-
+  
 # open the anvred.log file in the working directory
 fileName = output_directory + '/anvred3.log'
 logFile = open( fileName, 'w' )
@@ -819,7 +981,6 @@ curhst = 0
 idet = 0
 hstnum = int(starting_batch_number) - 1    # Set the starting batch number
 cmon = 9.89E+5                             # Scale proton charge to 1 MW-hr
-
 ncntr = 0                                  # Number of processed reflections
 
 nrun = 0
@@ -867,8 +1028,8 @@ while True:
     sigi = abs(peak[20])
     reflag = peak[21]
     
-    #if ((omega<91.5 or omega>-91.5) and (dn not in (59,56))):                   
-    if dn not in (60,99):
+    #if ((omega<91.5 or omega>-91.5) and (dn not in (59,56))):
+    if dn !=99:                    
         if (nrun != curhst or dn != idet):
             if nrun != curhst:
                 curhst = nrun
@@ -1036,7 +1197,8 @@ while True:
         sigfsq = sigi * correc * cmonx
 
         # Include instrument background constant in sigma        
-        sigfsq = sqrt( sigfsq**2 + (relSigSpect*fsq)**2 + 1.94* correc * cmonx)   
+        sigfsq = sqrt( sigfsq**2 + (relSigSpect*fsq)**2 + 1.94)   
+    
         fsq = fsq * scaleFactor
         sigfsq = sigfsq * scaleFactor
 
@@ -1510,6 +1672,10 @@ hkl_output2.close()
 print("\n**************************************************************************************")
 print("****************************** All DONE **********************************************")
 print("**************************************************************************************\n")
+print('Config file used for data reduction : ' + config_file_name) 
+
+logFile.write('\nConfig file used for data reduction : ' + config_file_name) 
 
 logFile.close()
- #
+
+print('Connfig file: ' + config_file_name) 

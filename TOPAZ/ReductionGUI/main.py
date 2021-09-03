@@ -6,7 +6,7 @@ import sys  # We need sys so that we can pass argv to QApplication
 from subprocess import PIPE, Popen
 import signal
 import design  # This file holds our MainWindow and all design related things
-import ReduceDictionary
+import mod3.ReduceDictionary as ReduceDictionary
 import shlex
 import math
 import time
@@ -118,7 +118,31 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.FluxFile_btn.clicked.connect(self.Fluxbrowse_file)  # When the button is pressed
         self.SAFile_ledt.textChanged.connect(self.change_SAfile)
         self.SAFile_btn.clicked.connect(self.SAbrowse_file)  # When the button is pressed
-
+        # satellite
+        self.tolerance_satellite_ledt.textChanged.connect(self.change_tolerance_satellite)
+        self.mod_vec_1_dh_ledt.textChanged.connect(self.change_mod_vec_1_dh)
+        self.mod_vec_1_dk_ledt.textChanged.connect(self.change_mod_vec_1_dk)
+        self.mod_vec_1_dl_ledt.textChanged.connect(self.change_mod_vec_1_dl)
+        self.mod_vec_2_dh_ledt.textChanged.connect(self.change_mod_vec_2_dh)
+        self.mod_vec_2_dk_ledt.textChanged.connect(self.change_mod_vec_2_dk)
+        self.mod_vec_2_dl_ledt.textChanged.connect(self.change_mod_vec_2_dl)
+        self.mod_vec_3_dh_ledt.textChanged.connect(self.change_mod_vec_3_dh)
+        self.mod_vec_3_dk_ledt.textChanged.connect(self.change_mod_vec_3_dk)
+        self.mod_vec_3_dl_ledt.textChanged.connect(self.change_mod_vec_3_dl)
+        self.max_order_ledt.textChanged.connect(self.change_max_order)
+        self.cross_terms_chbx.stateChanged.connect(self.change_cross_terms)  
+        self.save_mod_info_chbx.stateChanged.connect(self.change_save_mod_info)  
+        self.sat_peak_region_radius_ledt.textChanged.connect(self.change_sat_peak_region_radius)
+        self.sat_peak_radius_ledt.textChanged.connect(self.change_sat_peak_radius)
+        self.sat_peak_inner_radius_ledt.textChanged.connect(self.change_sat_peak_inner_radius)
+        self.sat_peak_outer_radius_ledt.textChanged.connect(self.change_sat_peak_outer_radius)
+        self.satellite_chbx.stateChanged.connect(self.hide_satellites)
+        self.tabWidget.setTabEnabled(3, self.satellite_chbx.isChecked())
+        
+    def hide_satellites(self):
+        self.tabWidget.setTabEnabled(3, self.satellite_chbx.isChecked())
+        self.max_order = self.max_order_ledt.text() if self.satellite_chbx.isChecked() else 0
+        
     def change_h1(self):
         self._h1 = self.h1.currentText()
 
@@ -435,6 +459,45 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.z_score_ledt.setText(self.z_score)
         self.starting_batch_number = str(self.toInt(params_dictionary.get("starting_batch_number",'1')))
         self.starting_batch_number_ledt.setText(self.starting_batch_number)
+        self.tolerance_satellite = str(params_dictionary[ "tolerance_satellite" ])
+        self.tolerance_satellite_ledt.setText(self.tolerance_satellite)
+        mod_vec_1 = str(params_dictionary[ "mod_vector1" ])
+        mod_vec_2 = str(params_dictionary[ "mod_vector2" ])
+        mod_vec_3 = str(params_dictionary[ "mod_vector3" ])
+        self.mod_vec_1_dh = mod_vec_1.split(',')[0]
+        self.mod_vec_1_dk = mod_vec_1.split(',')[1]
+        self.mod_vec_1_dl = mod_vec_1.split(',')[2]
+        self.mod_vec_2_dh = mod_vec_2.split(',')[0]
+        self.mod_vec_2_dk = mod_vec_2.split(',')[1]
+        self.mod_vec_2_dl = mod_vec_2.split(',')[2]
+        self.mod_vec_3_dh = mod_vec_3.split(',')[0]
+        self.mod_vec_3_dk = mod_vec_3.split(',')[1]
+        self.mod_vec_3_dl = mod_vec_3.split(',')[2]
+        self.mod_vec_1_dh_ledt.setText(self.mod_vec_1_dh)
+        self.mod_vec_1_dk_ledt.setText(self.mod_vec_1_dk)
+        self.mod_vec_1_dl_ledt.setText(self.mod_vec_1_dl)
+        self.mod_vec_2_dh_ledt.setText(self.mod_vec_2_dh)
+        self.mod_vec_2_dk_ledt.setText(self.mod_vec_2_dk)
+        self.mod_vec_2_dl_ledt.setText(self.mod_vec_2_dl)
+        self.mod_vec_3_dh_ledt.setText(self.mod_vec_3_dh)
+        self.mod_vec_3_dk_ledt.setText(self.mod_vec_3_dk)
+        self.mod_vec_3_dl_ledt.setText(self.mod_vec_3_dl)
+        self.max_order = str(params_dictionary[ "max_order" ])
+        self.max_order_ledt.setText(self.max_order)
+        self.satellite_chbx.setChecked(self.max_order > 0)
+        self.hide_satellites()
+        self.cross_terms = self.toBool(params_dictionary[ "cross_terms" ])
+        self.cross_terms_chbx.setChecked(self.cross_terms)
+        self.save_mod_info = self.toBool(params_dictionary[ "save_mod_info" ])
+        self.save_mod_info_chbx.setChecked(self.save_mod_info)   
+        self.sat_peak_radius = str(params_dictionary[ "satellite_peak_size" ])
+        self.sat_peak_radius_ledt.setText(self.sat_peak_radius)
+        self.sat_peak_region_radius = str(params_dictionary[ "satellite_region_radius" ])
+        self.sat_peak_region_radius_ledt.setText(self.sat_peak_region_radius)
+        self.sat_peak_inner_radius = str(params_dictionary[ "satellite_background_inner_size" ])
+        self.sat_peak_inner_radius_ledt.setText(self.sat_peak_inner_radius)
+        self.sat_peak_outer_radius = str(params_dictionary[ "satellite_background_outer_size" ])
+        self.sat_peak_outer_radius_ledt.setText(self.sat_peak_outer_radius)
 
     def change_instrument(self):
         self.instrument = self.instrument_cmbx.currentText()
@@ -703,7 +766,58 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.maxQspace_ledt.setText(str(self.maxQ))
         except:
             self.maxQspace_ledt.setText('')
+            
+    def change_tolerance_satellite(self):
+        self.tolerance_satellite = self.toDouble(self.tolerance_satellite_ledt.text())
 
+    def change_mod_vec_1_dh(self):
+        self.mod_vec_1_dh = self.toDouble(self.mod_vec_1_dh_ledt.text())
+    
+    def change_mod_vec_1_dk(self):        
+        self.mod_vec_1_dk = self.toDouble(self.mod_vec_1_dk_ledt.text())
+   
+    def change_mod_vec_1_dl(self):        
+        self.mod_vec_1_dl = self.toDouble(self.mod_vec_1_dl_ledt.text())
+        
+    def change_mod_vec_2_dh(self):
+        self.mod_vec_2_dh = self.toDouble(self.mod_vec_2_dh_ledt.text())
+    
+    def change_mod_vec_2_dk(self):        
+        self.mod_vec_2_dk = self.toDouble(self.mod_vec_2_dk_ledt.text())
+        
+    def change_mod_vec_2_dl(self):        
+        self.mod_vec_2_dl = self.toDouble(self.mod_vec_2_dl_ledt.text())
+        
+    def change_mod_vec_3_dh(self):
+        self.mod_vec_3_dh = self.toDouble(self.mod_vec_3_dh_ledt.text())
+    
+    def change_mod_vec_3_dk(self):        
+        self.mod_vec_3_dk = self.toDouble(self.mod_vec_3_dk_ledt.text())
+        
+    def change_mod_vec_3_dl(self):        
+        self.mod_vec_3_dl = self.toDouble(self.mod_vec_3_dl_ledt.text())
+
+    def change_max_order(self):                
+        self.max_order = self.toInt(self.max_order_ledt.text())
+        
+    def change_cross_terms(self):                
+        self.cross_terms = self.toBool(self.cross_terms_chbx.isChecked())
+        
+    def change_save_mod_info(self):                
+        self.save_mod_info = self.toBool(self.save_mod_info_chbx.isChecked())
+        
+    def change_sat_peak_region_radius(self):  
+        self.sat_peak_radius = self.toDouble(self.sat_peak_region_radius_ledt.text())
+        
+    def change_sat_peak_radius(self):  
+        self.sat_peak_radius = self.toDouble(self.sat_peak_radius_ledt.text())
+
+    def change_sat_peak_inner_radius(self):          
+        self.sat_peak_inner_radius = self.toDouble(self.sat_peak_inner_radius_ledt.text())
+
+    def change_sat_peak_outer_radius(self):          
+        self.sat_peak_outer_radius = self.toDouble(self.sat_peak_outer_radius_ledt.text())
+        
     def toBool(self, temp):
         try:
             result = bool(temp)
@@ -765,13 +879,35 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
             self.pred_maxDSpacing_ledt.setEnabled(True)
             self.pred_minWavelength_ledt.setEnabled(True)
             self.pred_maxWavelength_ledt.setEnabled(True)
+            # self.mod_vec_1_dh_ledt.setEnabled(True)
+            # self.mod_vec_1_dk_ledt.setEnabled(True)
+            # self.mod_vec_1_dl_ledt.setEnabled(True)
+            # self.mod_vec_2_dh_ledt.setEnabled(True)
+            # self.mod_vec_2_dk_ledt.setEnabled(True)
+            # self.mod_vec_2_dl_ledt.setEnabled(True)
+            # self.mod_vec_3_dh_ledt.setEnabled(True)
+            # self.mod_vec_3_dk_ledt.setEnabled(True)
+            # self.mod_vec_3_dl_ledt.setEnabled(True)
+            # self.max_order_ledt.setEnabled(True)
+            # self.cross_terms_chbx.setEnabled(True)
         else:
             self.predictPeaks = str( False)
             self.pred_minDSpacing_ledt.setDisabled(True)
             self.pred_maxDSpacing_ledt.setDisabled(True)
             self.pred_minWavelength_ledt.setDisabled(True)
             self.pred_maxWavelength_ledt.setDisabled(True)
-
+            # self.mod_vec_1_dh_ledt.setDisabled(True)
+            # self.mod_vec_1_dk_ledt.setDisabled(True)
+            # self.mod_vec_1_dl_ledt.setDisabled(True)
+            # self.mod_vec_2_dh_ledt.setDisabled(True)
+            # self.mod_vec_2_dk_ledt.setDisabled(True)
+            # self.mod_vec_2_dl_ledt.setDisabled(True)
+            # self.mod_vec_3_dh_ledt.setDisabled(True)
+            # self.mod_vec_3_dk_ledt.setDisabled(True)
+            # self.mod_vec_3_dl_ledt.setDisabled(True)
+            # self.max_order_ledt.setDisabled(True)
+            # self.cross_terms_chbx.setDisabled(True)
+            
     def ellipse_size(self, state):
         if state == QtCore.Qt.Checked:
             self.ellipse_size_specified = str( True)
@@ -878,14 +1014,25 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 "max_wl": self.maxWavelength,
                 "pg_symbol": pg,
                 "z_score": self.z_score,
-                "starting_batch_number": self.starting_batch_number
+                "starting_batch_number": self.starting_batch_number,
+                "tolerance_satellite":  self.tolerance_satellite,
+                "mod_vector1": "{},{},{}".format(self.mod_vec_1_dh, self.mod_vec_1_dk, self.mod_vec_1_dl),
+                "mod_vector2": "{},{},{}".format(self.mod_vec_2_dh, self.mod_vec_2_dk, self.mod_vec_2_dl),
+                "mod_vector3": "{},{},{}".format(self.mod_vec_3_dh, self.mod_vec_3_dk, self.mod_vec_3_dl),
+                "max_order": self.max_order,
+                "cross_terms": self.cross_terms,
+                "save_mod_info": self.save_mod_info,
+                "satellite_peak_size": self.sat_peak_radius,
+                "satellite_region_radius": self.sat_peak_region_radius,
+                "satellite_background_inner_size": self.sat_peak_inner_radius,
+                "satellite_background_outer_size": self.sat_peak_outer_radius,
             }
             # if value in dictionary is missing, set to None
             for key in list(kw.keys()):
                 if not kw[key]:
                     kw[key] = "None"
 
-            templatePath = "./template.config"
+            templatePath = "./mod3/example_sat_q00_0q0_bkg.config"
             self.path = self.expName+".config"
             self.format_template(templatePath, self.path, **kw)
             self.plotConfig()
@@ -955,7 +1102,7 @@ class MantidReduction(QtWidgets.QMainWindow, design.Ui_MainWindow):
         if self.live is True:
             self.proc = Popen(['/bin/mantidpythonnightly','runMantidEV.py', str(self.path)])
         else:
-            self.proc = Popen(['/bin/mantidpythonnightly','topaz_reduction.py', str(self.path)])
+            self.proc = Popen(['/bin/mantidpythonnightly','mod3/topaz_reduction_mod.py', str(self.path)])
             if self.modStruct:
                 self.proc.wait()
                 Popen(['/bin/mantidpythonnightly','ModulatedStructurePlot.py', str(self.path)])

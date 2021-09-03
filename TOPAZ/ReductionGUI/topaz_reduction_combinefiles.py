@@ -27,8 +27,8 @@ import numpy as np
 from operator import itemgetter
 from itertools import groupby
 
-sys.path.insert(0,"/opt/mantid51/bin")
-sys.path.insert(0,"/opt/mantid51/lib")
+sys.path.insert(0,"/opt/mantidnightly/bin")
+sys.path.insert(0,"/opt/mantidnightly/lib")
 import ReduceDictionary
 
 from mantid.simpleapi import *
@@ -336,7 +336,9 @@ if not use_cylindrical_integration:
   IndexPeaks( PeaksWorkspace=peaks_ws, CommonUBForAll=True, Tolerance=tolerance )
   FindUBUsingIndexedPeaks(PeaksWorkspace=peaks_ws, Tolerance=tolerance)
   SaveIsawPeaks( InputWorkspace=peaks_ws, AppendFile=False, Filename=niggli_integrate_file )
-  SaveIsawUB( InputWorkspace=peaks_ws, Filename=niggli_matrix_file )
+  FilterPeaks(InputWorkspace=peaks_ws, OutputWorkspace='strong_peaks', FilterVariable='Signal/Noise', FilterValue=5, Operator='>=')
+  FindUBUsingIndexedPeaks(PeaksWorkspace='strong_peaks', Tolerance=tolerance)
+  SaveIsawUB( InputWorkspace='strong_peaks', Filename=niggli_matrix_file )
   anvred_integrate_fname = niggli_integrate_file
   ub_matrix_file = niggli_matrix_file
 
@@ -359,9 +361,11 @@ if not use_cylindrical_integration:
     OptimizeLatticeForCellType(PeaksWorkspace=peaks_ws, CellType=cell_type,Apply='1', Tolerance=tolerance)
     #OptimizeCrystalPlacement(PeaksWorkspace=peaks_ws,ModifiedPeaksWorkspace=peaks_ws,
     #  FitInfoTable='CrystalPlacement_info',MaxIndexingError=tolerance)
-    IndexPeaks( PeaksWorkspace=peaks_ws, CommonUBForAll=True, Tolerance=tolerance )
+    #IndexPeaks( PeaksWorkspace=peaks_ws, CommonUBForAll=True, Tolerance=tolerance )
     SaveIsawPeaks( InputWorkspace=peaks_ws, AppendFile=False, Filename=conventional_integrate_file )
-    SaveIsawUB( InputWorkspace=peaks_ws, Filename=conventional_matrix_file )
+    FilterPeaks(InputWorkspace=peaks_ws, OutputWorkspace='strong_peaks', FilterVariable='Signal/Noise', FilterValue=5, Operator='>=')
+    IndexPeaks( PeaksWorkspace=peaks_ws, CommonUBForAll=True, Tolerance=tolerance )
+    SaveIsawUB( InputWorkspace='strong_peaks', Filename=conventional_matrix_file )
     #ANVRED
     anvred_integrate_fname = conventional_integrate_file
     ub_matrix_file = conventional_matrix_file
@@ -649,6 +653,42 @@ if True:
 #  33:1.0,34:1.0,36:1.0,37:1.0,38:1.0,39:1.0,\
 #  46:1.0,47:1.0,48:1.0,49:1.0,
 #  56:1,57:1,58:1,59:1}
+#
+
+#May 8, 2013
+#detScale = {17:1.092114823,18:0.869105443, \
+#     22:1.081377685,26:1.055199489,27:1.070308725,28:0.886157884, \
+#     36:1.112773972,37:1.012894506,38:1.049384146,39:0.890313805, \
+#     47:1.068553893,48:0.900566426, \
+#     58:0.911249203}
+
+#May 8, 2013
+#detScale = {17:1.092114823,18:0.869105443, \
+#     22:1.081377685,26:1.055199489,27:1.070308725,28:0.886157884, \
+#     36:1.112773972,37:1.012894506,38:1.049384146,39:0.890313805, \
+#     47:1.068553893,48:0.900566426, \
+#     58:0.911249203}
+
+#Scolecite May  2013 new scale from Jana June 22, 2021
+#detScale={ 13:1.00236,14:1.002356,16:1.002356,17:1.08314,18:0.88048,19:1.00236,\
+#           20:1.002356,22:1.069259,26:1.02063,27:1.07548,28:0.93082,29:1.00236,\
+#           33:1.002356,36:1.06732,37:0.97944,38:1.07740,39:0.88358,\
+#           46:1.002356,47:1.06048,48:0.92961,49:1.00236,\
+#           56:1.00236,57:1.00236,58:0.91408,59:1.00236}
+
+#scolecite 09/23/2013 Spectrum_7892_7827.dat Jana2020
+#detScale={ 13:1, 14:1,16:1,17:1.08177,18:0.91697,19:1,\
+#           20:1,22:1.075802,26:1.00577,27:1.06215,28:0.95482,29:1,\
+#           33:1,36:0.99789, 37:0.98295,38:1.09930,39:0.94828,\
+#           46:1,47:1.07601, 48:0.95802,49:1,\
+#           56:1, 57:1, 58:0.95298,59:1}
+
+#scolecite	11/23/2014	Use new V(Nb) spectrum
+#detScale={13:1.045376639,14:1.049323439,16:0.96320942,17:1.083694892,18:0.841218527,19:0.968667508,\
+#22:1.019967316,23:1.058377391,26:1.063270351,27:1.043714078,28:0.835908577,29:1.041756057,\
+#33:1.098880837,34:0.995098568,36:1.154014423,37:0.998311123,38:1.011176494,39:0.823424691,\
+#46:1.016793518,47:1.063452809,48:0.858501134,49:1.057252466,\
+#58:0.908609739}
 
 #Scolecite 2015/08/31
 #detScale={13:1.044824,14:1.06399,16:0.95552,17:1.09583,18:0.84606,19:1.00154,\
@@ -771,11 +811,18 @@ if True:
 #    56:1.27779,57:1.02779,58:0.94930,59:0.89119} 
 
 #Feb/27/2021 Scolecite AG 3-3 mm BN Aperture
-detScale={13:1.124640,14:1.263114,16:1.33895,17:1.01740,18:0.91066,19:0.75849,\
-          20:0.687544,22:1.162599,26:1.23753,27:0.92761,28:0.83093,29:0.63115,\
-          33:1.149815,36:1.314750,37:1.09043,38:0.91098,39:0.69582,\
-          46:1.300390,47:0.959460,48:0.86798,49:0.60712,\
-          56:1.348560,57:1.041110,58:0.98660,59:0.83638}
+#detScale={13:1.124640,14:1.263114,16:1.33895,17:1.01740,18:0.91066,19:0.75849,\
+#          20:0.687544,22:1.162599,26:1.23753,27:0.92761,28:0.83093,29:0.63115,\
+#          33:1.149815,36:1.314750,37:1.09043,38:0.91098,39:0.69582,\
+#          46:1.300390,47:0.959460,48:0.86798,49:0.60712,\
+#          56:1.348560,57:1.041110,58:0.98660,59:0.83638}
+
+#June 6/2021 Bixbyite AG 3-3 mm BN Aperture:
+detScale={13:1.05321,14:1.066755,16:0.973064,17:0.92406,18:0.93731,19:0.90281,\
+          20:0.927286,22:1.195631,26:1.09975,27:0.90359,28:0.95096,29:0.82056,\
+          33:1.145274,36:1.07773,37:1.01502,38:0.97703,39:0.88045,\
+          46:1.150778,47:0.94977,48:1.00642,49:0.84127,\
+          56:1.18183,57:0.95950,58:1.04685,59:1.01310}
   
 # open the anvred.log file in the working directory
 fileName = output_directory + '/anvred3.log'
@@ -981,7 +1028,8 @@ while True:
     sigi = abs(peak[20])
     reflag = peak[21]
     
-    if dn not in (60,99):
+    #if ((omega<91.5 or omega>-91.5) and (dn not in (59,56))):
+    if dn !=99:                    
         if (nrun != curhst or dn != idet):
             if nrun != curhst:
                 curhst = nrun
@@ -1515,8 +1563,6 @@ logFile.write('\nNumber of peaks after outlier removal: {0}'.format(mtd['OutputP
 
 print('\nSaving result ...')
 
-logFile.close()
-
 for i in range(mtd['OutputPeaks'].getNumberPeaks()):
     pk=mtd['OutputPeaks'].getPeak(i)
     hkl=pk.getHKL()
@@ -1624,5 +1670,10 @@ hkl_output2.close()
 print("\n**************************************************************************************")
 print("****************************** All DONE **********************************************")
 print("**************************************************************************************\n")
+print('Config file used for data reduction : ' + config_file_name) 
+
+logFile.write('\nConfig file used for data reduction : ' + config_file_name) 
 
 logFile.close()
+
+print('Connfig file: ' + config_file_name) 

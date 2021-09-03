@@ -27,8 +27,8 @@ import numpy as np
 from operator import itemgetter
 from itertools import groupby
 
-sys.path.insert(0,"/opt/mantid50/bin")
-sys.path.insert(0,"/opt/mantid50/lib")
+sys.path.insert(0,"/opt/mantidnightly/bin")
+sys.path.insert(0,"/opt/mantidnightly/lib")
 
 import ReduceDictionary
 
@@ -510,19 +510,29 @@ if True:
         linelist = linestring.split()
         for j in range(3):
             UB_IPNS[i,j] = float(linelist[j])           
-    # Read next 2 lines containing lattice constants and esd's
-    for i in range(2):
-        linestring = UB_input.readline()
-        print(linestring.strip('\n'))
-    print('\n')
+
+    if maxOrder==0:
+        # Read next 2 lines containing lattice constants and esd's
+        for i in range(2):
+            linestring = UB_input.readline()
+            print(linestring.strip('\n'))
+        print('\n')
+
+    else:
+    # Read next 14 lines containing lattice constants and esd's
+        for i in range(14):
+            linestring = UB_input.readline()
+            print(linestring.strip('\n'))
+        print('\n')
+
     # End of reading and printing matrix file
                 
 #
 #detScale={13:1.0,14:1.0,16:1.0,17:1.0,18:1.0,19:1.0,\
 #  20:1.0,21:1.0,22:1.0,23:1.0,26:1.0,27:1.0,28:1.0,29:1.0,\
 #  33:1.0,34:1.0,36:1.0,37:1.0,38:1.0,39:1.0,\
-#  46:1.0,47:1.0,48:1.0,49:1.0}
-                               
+#  46:1.0,47:1.0,48:1.0,49:1.0,
+#  56:1,57:1,58:1,59:1}                               
 
 #Scolecite 2013B, XP Wang Sept 23, 2013 
 #detScale = {17:1.115862021,18:0.87451341,\
@@ -645,18 +655,25 @@ if True:
 #    56:1.16396,57:0.92676,58:0.99084,59:0.93086}
 
 #Jun/05/2020:Nd5Pb3O 130K 3-3 mm BN Aperture:
-#detScale={13:1.16688,14:1.286851,16:1.200336,17:0.96340,18:0.91786,19:0.77843,\
-#    20:0.702411,22:1.198750,26:1.25762,27:0.89396,28:0.81221,29:0.63821,\
-#    33:1.170489,36:1.36634,37:1.10622,38:0.92717,39:0.73494,\
-#    46:1.280152,47:0.92700,48:0.88473,49:0.63999,\
-#    56:1.27779,57:1.02779,58:0.94930,59:0.89119} 
+detScale={13:1.16688,14:1.286851,16:1.200336,17:0.96340,18:0.91786,19:0.77843,\
+    20:0.702411,22:1.198750,26:1.25762,27:0.89396,28:0.81221,29:0.63821,\
+    33:1.170489,36:1.36634,37:1.10622,38:0.92717,39:0.73494,\
+    46:1.280152,47:0.92700,48:0.88473,49:0.63999,\
+    56:1.27779,57:1.02779,58:0.94930,59:0.89119} 
 
 #Feb/27/2021 Scolecite AG 3-3 mm BN Aperture
-detScale={13:1.124640,14:1.263114,16:1.33895,17:1.01740,18:0.91066,19:0.75849,\
-          20:0.687544,22:1.162599,26:1.23753,27:0.92761,28:0.83093,29:0.63115,\
-          33:1.149815,36:1.314750,37:1.09043,38:0.91098,39:0.69582,\
-          46:1.300390,47:0.959460,48:0.86798,49:0.60712,\
-          56:1.348560,57:1.041110,58:0.98660,59:0.83638}
+#detScale={13:1.124640,14:1.263114,16:1.33895,17:1.01740,18:0.91066,19:0.75849,\
+#          20:0.687544,22:1.162599,26:1.23753,27:0.92761,28:0.83093,29:0.63115,\
+#          33:1.149815,36:1.314750,37:1.09043,38:0.91098,39:0.69582,\
+#          46:1.300390,47:0.959460,48:0.86798,49:0.60712,\
+#          56:1.348560,57:1.041110,58:0.98660,59:0.83638}
+
+#June 6/2021 Bixbyite AG 3-3 mm BN Aperture:
+#detScale={13:1.05321,14:1.066755,16:0.973064,17:0.92406,18:0.93731,19:0.90281,\
+#          20:0.927286,22:1.195631,26:1.09975,27:0.90359,28:0.95096,29:0.82056,\
+#          33:1.145274,36:1.07773,37:1.01502,38:0.97703,39:0.88045,\
+#          46:1.150778,47:0.94977,48:1.00642,49:0.84127,\
+#          56:1.18183,57:0.95950,58:1.04685,59:1.01310}
 
 # open the anvred.log file in the working directory
 fileName = output_directory + '/anvred3.log'
@@ -814,7 +831,7 @@ for id in range(nod):
 curhst = 0
 idet = 0
 hstnum = int(starting_batch_number) - 1    # Set the starting batch number
-cmon = 1.3889E+6                           # Scale monitor counts to proton charge of 5C
+cmon = 9.89E+5                             # Scale proton charge to 1 MW-hr
 ncntr = 0                                  # Number of processed reflections
 
 nrun = 0
@@ -866,7 +883,11 @@ while True:
         m = peak[23]
         n = peak[24]
         p = peak[25]
-    
+    else:
+        m = 0
+        n = 0
+        p = 0
+
     if dn !=99:
         if (nrun != curhst or dn != idet):
             if nrun != curhst:
@@ -932,128 +953,65 @@ while True:
             logFile.write(' %4d *** Peak not indexed for run %4d det %4d   \n' \
                 % (seqnum,nrun,dn))        
             continue  
-        #
-        if maxOrder > 0:
-            if inti == 0.0 :
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** intI = 0.0 \n' \
-                    % (h, k, l, m, n, p))
-                continue  
-    
-            if isnan(sigi) == True:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** sigi = nan \n' \
-                    % (h, k, l, m, n, p))
-                continue  
-    
-            if minIsigI >= 0 and inti < abs(minIsigI * sigi):
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** inti < (minIsigI * sigi) \n' \
-                    % (h, k, l, m, n, p))
-                continue
-                
-            if inti < intiMin:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** inti < intiMin \n' \
-                    % (h, k, l, m, n, p))
-                continue
-    
-            # Set-up limits for neutron wavelentgh XP Wang 02/24/2011
-            if wl < wlMin:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** wl < wlMin \n' \
-                    % (h, k, l, m, n, p))
-                continue
-    
-            if wl > wlMax:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** wl > wlMax \n' \
-                    % (h, k, l, m, n, p))
-                continue
-        else:
-            if (h==0 and k==0 and l==0):
-                logFile.write(' %4d *** Peak not indexed for run %4d det %4d   \n' \
-                    % (seqnum,nrun,dn))        
-                continue  
-            if inti == 0.0 :
-                logFile.write(' %4d%4d%4d *** intI = 0.0 \n' \
-                    % (h, k, l))
-                continue  
-    
-            if isnan(sigi) == True:
-                logFile.write(' %4d%4d%4d *** sigi = nan \n' \
-                    % (h, k, l))
-                continue  
-    
-            if minIsigI >= 0 and inti < abs(minIsigI * sigi):
-                logFile.write(' %4d%4d%4d *** inti < (minIsigI * sigi) \n' \
-                    % (h, k, l))
-                continue
-                
-            if inti < intiMin:
-                logFile.write(' %4d%4d%4d *** inti < intiMin \n' \
-                    % (h, k, l))
-                continue
-    
-            # Set-up limits for neutron wavelentgh XP Wang 02/24/2011
-            if wl < wlMin:
-                logFile.write(' %4d%4d%4d *** wl < wlMin \n' \
-                    % (h, k, l))
-                continue
-    
-            if wl > wlMax:
-                logFile.write(' %4d%4d%4d *** wl > wlMax \n' \
-                    % (h, k, l))
-                continue
+        if inti == 0.0 :
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** intI = 0.0 \n' \
+                % (h, k, l, m, n, p))
+            continue  
+
+        if isnan(sigi) == True:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** sigi = nan \n' \
+                % (h, k, l, m, n, p))
+            continue  
+
+        if minIsigI >= 0 and inti < abs(minIsigI * sigi):
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** inti < (minIsigI * sigi) \n' \
+                % (h, k, l, m, n, p))
+            continue
+            
+        if inti < intiMin:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** inti < intiMin \n' \
+                % (h, k, l, m, n, p))
+            continue
+
+        # Set-up limits for neutron wavelentgh XP Wang 02/24/2011
+        if wl < wlMin:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** wl < wlMin \n' \
+                % (h, k, l, m, n, p))
+            continue
+
+        if wl > wlMax:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** wl > wlMax \n' \
+                % (h, k, l, m, n, p))
+            continue
 
         nRows = calibParam[4][id]
         nCols = calibParam[5][id]
-
-        if maxOrder > 0:
-            if col < numBorderCh:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** col < numBorderCh \n' \
-                    % (h, k, l, m, n, p))
-                continue
-                
-            if col > (nCols - numBorderCh):
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** col > (nCols - numBorderCh)\n' \
-                    % (h, k, l, m, n, p))
-                continue
-                
-            if row < numBorderCh:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** row < numBorderCh \n' \
-                    % (h, k, l, m, n, p))
-                continue
-                
-            if row > (nRows - numBorderCh):
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** row > (nRows - numBorderCh)\n' \
-                    % (h, k, l, m, n, p))
-                continue
-                                
-            if dsp < dMin:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** dsp < dMin \n' \
-                    % (h, k, l, m, n, p))
-                continue
-        else:
-            if col < numBorderCh:
-                logFile.write(' %4d%4d%4d *** col < numBorderCh \n' \
-                    % (h, k, l))
-                continue
-                
-            if col > (nCols - numBorderCh):
-                logFile.write(' %4d%4d%4d *** col > (nCols - numBorderCh)\n' \
-                    % (h, k, l))
-                continue
-                
-            if row < numBorderCh:
-                logFile.write(' %4d%4d%4d *** row < numBorderCh \n' \
-                    % (h, k, l))
-                continue
-                
-            if row > (nRows - numBorderCh):
-                logFile.write(' %4d%4d%4d *** row > (nRows - numBorderCh)\n' \
-                    % (h, k, l))
-                continue
-                                
-            if dsp < dMin:
-                logFile.write(' %4d%4d%4d *** dsp < dMin \n' \
-                    % (h, k, l))
-                continue
-
+        
+        if col < numBorderCh:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** col < numBorderCh \n' \
+                % (h, k, l, m, n, p))
+            continue
+            
+        if col > (nCols - numBorderCh):
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** col > (nCols - numBorderCh)\n' \
+                % (h, k, l, m, n, p))
+            continue
+            
+        if row < numBorderCh:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** row < numBorderCh \n' \
+                % (h, k, l, m, n, p))
+            continue
+            
+        if row > (nRows - numBorderCh):
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** row > (nRows - numBorderCh)\n' \
+                % (h, k, l, m, n, p))
+            continue
+                            
+        if dsp < dMin:
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** dsp < dMin \n' \
+                % (h, k, l, m, n, p))
+            continue
+        
         ncntr = ncntr + 1
         
         if iSpec == 1:
@@ -1066,14 +1024,10 @@ while True:
             spect = spectx[0]
             relSigSpect = spectx[1]
         if spect == 0.0:
-            if maxOrder > 0:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** spect == 0.0 \n' \
-                    % (h, k, l, m, n, p))
-            else:
-                logFile.write(' %4d%4d%4d%4d%4d%4d *** spect == 0.0 \n' \
-                    % (h, k, l))
+            logFile.write(' %4d%4d%4d%4d%4d%4d *** spect == 0.0 \n' \
+                % (h, k, l, m, n, p))
             continue
-
+        
         # correct for the slant path throught the scintillator glass
         mu = (9.614 * wl) + 0.266    # mu for GS20 glass
         depth = calibParam[8][id]
@@ -1103,6 +1057,7 @@ while True:
 
         # Include instrument background constant in sigma        
         sigfsq = sqrt( sigfsq**2 + (relSigSpect*fsq)**2 + 1.94)   
+    
         fsq = fsq * scaleFactor
         sigfsq = sigfsq * scaleFactor
 
@@ -1386,15 +1341,12 @@ if iIQ == 1 or iIQ == 3:
 
 hkl_output.close()
 
-peaks_ws=LoadIsawPeaks(Filename =anvred_integrate_fname)
-#LoadIsawUB(InputWorkspace=peaks_ws,Filename =ub_matrix_file)
-
 hkllists.sort(key=itemgetter(15))  # sort peaks by sequence number
 peak_num_anvred=np.array(hkllists)[:,15].astype(np.int)
 
 #
 jana_fname = os.path.splitext(anvred_integrate_fname)[0] + '.topi'
-print('Writing JANA topi file ...\n',jana_fname)
+print('Writing JANA topi file ...\n' + jana_fname)
 topi_f=open(jana_fname,'w')
 #
 #Q_sample in IPNS coordinates system, x-along neutron beam; y-perpendicular to neutron beam; z-up
@@ -1442,6 +1394,7 @@ for i in range(peaks_ws.getNumberPeaks()):
         #print(hkl, pki, index,pk.getIntensity(), pk.getSigmaIntensity())
 
 peaks_ws = FilterPeaks(InputWorkspace = peaks_ws,  FilterVariable = 'Intensity',  FilterValue = 0,  Operator = '!=')
+
 #
 print('\nNumber of Peaks from anvred correction : {0}'.format(peaks_ws.getNumberPeaks()))
 
@@ -1473,6 +1426,7 @@ else:
     pg_symbol =str(str(point_group.getHMSymbol()) +' (' +str(point_group.getCrystalSystem())+')')
 print('Point Group symmetry: {}'.format(pg_symbol))
 print('Z score: ', z_score)
+
 
 # Run the SortHKL algorithm
 sorted, statistics_table, eq_peaks_list = StatisticsOfPeaksWorkspace(InputWorkspace=peaks_ws, 
@@ -1536,6 +1490,8 @@ hkl_out=[]
 peak_num_anvred=np.array(hkllists)[:,15].astype(np.int)
 
 print('Number of peaks after outlier removal: {0}'.format(mtd['OutputPeaks'].getNumberPeaks()))
+
+logFile.write('\nNumber of peaks after outlier removal: {0}'.format(mtd['OutputPeaks'].getNumberPeaks()))
 print('\nSaving result ...')
 
 for i in range(mtd['OutputPeaks'].getNumberPeaks()):
